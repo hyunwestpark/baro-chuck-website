@@ -81,13 +81,6 @@ const Treatment = () => {
 
                 {/* 모바일 뷰 */}
                 <div className="md:hidden">
-                  <div className="relative">
-                    <img
-                      src={treatment.image}
-                      alt={treatment.name}
-                      className="w-full h-32 object-cover rounded-t-lg"
-                    />
-                  </div>
                   <div className="p-3">
                     <h3 className="text-md font-semibold text-center">
                       {treatment.name}
