@@ -1,22 +1,39 @@
 import { useState, useEffect } from "react";
 import { scheduleInfo, notices } from "@/config/scheduleInfo";
 import { ScrollAnimation } from "@/components/ScrollAnimation";
+import axios from "axios";
 
 export default function Hours() {
   const [isHoliday, setIsHoliday] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 서버에서 휴무일 정보를 가져오는 함수
     const checkHolidayStatus = async () => {
       try {
-        // TODO: API 호출로 대체
-        // const response = await fetch('/api/holiday-status');
-        // const data = await response.json();
-        // setIsHoliday(data.isHoliday);
+        // 현재 날짜 가져오기
+        const today = new Date();
+        const dayOfWeek = today.getDay(); // 0 (일요일) ~ 6 (토요일)
 
-        // 임시로 랜덤값 사용
-        setIsHoliday(Math.random() < 0.3);
+        // 1. 일요일 체크
+        if (dayOfWeek === 0) {
+          setIsHoliday(true);
+          setLoading(false);
+          return;
+        }
+
+        // 2. API에서 오늘 날짜의 휴무일 체크
+        const formattedDate = today.toISOString().split("T")[0]; // YYYY-MM-DD 형식
+        const response = await axios.get("http://localhost:8080/api/notices");
+
+        // appliedDate가 오늘 날짜와 일치하는 공지사항 찾기
+        const todayHoliday = response.data.some(
+          (notice: any) =>
+            notice.appliedDate &&
+            notice.appliedDate.split("T")[0] === formattedDate
+        );
+
+        // 휴무일 상태 설정
+        setIsHoliday(todayHoliday);
         setLoading(false);
       } catch (error) {
         console.error("휴무일 정보를 불러오는데 실패했습니다:", error);
