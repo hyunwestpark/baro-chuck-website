@@ -27,6 +27,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -34,6 +35,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { CalendarIcon, Trash2 } from "lucide-react";
@@ -44,6 +46,7 @@ import * as z from "zod";
 interface Notice {
   id: number;
   title: string;
+  dayOff: boolean;
   content: string;
   appliedDate: string;
   createdAt: string;
@@ -60,6 +63,7 @@ const formSchema = z.object({
   appliedDate: z.date({
     required_error: "날짜를 선택해주세요.",
   }),
+  dayOff: z.boolean().default(false),
 });
 
 const Notice = () => {
@@ -109,6 +113,7 @@ const Notice = () => {
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     const noticeData = {
       title: values.title,
+      dayOff: values.dayOff,
       content: values.content,
       appliedDate: format(values.appliedDate, "yyyy-MM-dd"),
     };
@@ -191,6 +196,17 @@ const Notice = () => {
               {notices.map((notice) => (
                 <TableRow key={notice.id}>
                   <TableCell className="font-medium">{notice.title}</TableCell>
+                  <TableCell>
+                    {notice.dayOff ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        휴무일
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        정상운영
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell>{formatDate(notice.appliedDate)}</TableCell>
                   <TableCell>{formatDate(notice.createdAt)}</TableCell>
                   <TableCell className="text-right">
@@ -217,7 +233,7 @@ const Notice = () => {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>새 공지사항 작성</DialogTitle>
+            <DialogTitle className="text-xl">새 공지사항 작성</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -226,7 +242,7 @@ const Notice = () => {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>제목</FormLabel>
+                    <FormLabel className="text-lg">제목</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="예: 5월 1일 병원 휴무 안내"
@@ -237,12 +253,13 @@ const Notice = () => {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="content"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>내용</FormLabel>
+                    <FormLabel className="text-lg">내용</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="예: 근로자의 날을 맞아 5월 1일은 휴무입니다. 응급 상황은 응급실로 연락 바랍니다."
@@ -259,7 +276,7 @@ const Notice = () => {
                 name="appliedDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>적용 날짜</FormLabel>
+                    <FormLabel className="text-lg">적용 날짜</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -293,6 +310,26 @@ const Notice = () => {
                       </PopoverContent>
                     </Popover>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="dayOff"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>휴무일 여부</FormLabel>
+                      <FormDescription>
+                        이 날짜가 병원 휴무일인 경우 체크하세요
+                      </FormDescription>
+                    </div>
                   </FormItem>
                 )}
               />
