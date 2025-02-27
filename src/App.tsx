@@ -14,7 +14,7 @@ import Home from "./pages/Home/Home";
 import Doctor from "./pages/Doctor/Doctor";
 import Hours from "./pages/Hours/Hours";
 import RequestPermission from "./pages/RequestPermission/RequestPermission";
-import SuperAdminDashboard from "./pages/Admin/\bSuperAdminDashboard";
+import SuperAdminDashboard from "./pages/Admin/SuperAdminDashboard";
 import Notice from "./pages/Notice/Notice";
 
 function ScrollToTop() {

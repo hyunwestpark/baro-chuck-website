@@ -4,6 +4,7 @@ import spine from "../../assets/spine.jpg";
 import joint from "../../assets/joint.jpg";
 import allergy from "../../assets/allergy.jpg";
 import therapy from "../../assets/therapy.jpg";
+import shock from "../../assets/shock.jpg";
 
 const Treatment = () => {
   const treatments = [
@@ -17,7 +18,7 @@ const Treatment = () => {
       id: 2,
       name: "충격파",
       description: "근골격계 통증 치료",
-      image: "/api/placeholder/300/200",
+      image: shock,
     },
     {
       id: 3,

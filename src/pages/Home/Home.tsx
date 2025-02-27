@@ -1,19 +1,14 @@
-import React, { useState, useEffect } from "react";
-import MainBanner from "./MainBanner";
-import MapSection from "./MapSection";
-import TreatmentArea from "./Treatment";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { ScrollAnimation } from "../../components/ScrollAnimation";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 
-// Define an interface for the Notice type
+const HospitalStatusCard = lazy(
+  () => import("@/components/HospitalStatusCard")
+);
+const MainBanner = lazy(() => import("./MainBanner"));
+const MapSection = lazy(() => import("./MapSection"));
+const TreatmentArea = lazy(() => import("./Treatment"));
+const NoticeModal = lazy(() => import("../../components/NoticeModal"));
+
 interface Notice {
   id: number;
   title: string;
@@ -23,21 +18,31 @@ interface Notice {
 }
 
 const Home = () => {
-  // State for notices and modal
   const [notices, setNotices] = useState<Notice[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedNotices, setSelectedNotices] = useState<Notice[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [hospitalDataReady, setHospitalDataReady] = useState(false);
 
-  // Fetch notices when the component mounts
+  // localStorage 체크 함수
+  const checkDoNotShowToday = () => {
+    try {
+      const lastShown = localStorage.getItem("noticeLastShown");
+      const today = new Date().toISOString().split("T")[0];
+      return lastShown === today;
+    } catch (error) {
+      console.error("localStorage 확인 중 오류:", error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     const fetchNotices = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        // Fetch notices from the API
         const response = await fetch("http://localhost:8080/api/notices");
 
         if (!response.ok) {
@@ -58,7 +63,8 @@ const Home = () => {
         setSelectedNotices(topThreeNotices);
         setIsLoading(false);
 
-        if (topThreeNotices.length > 0) {
+        // "오늘 다시 보지 않기" 설정이 없고 공지사항이 있을 경우에만 모달 열기
+        if (topThreeNotices.length > 0 && !checkDoNotShowToday()) {
           setIsModalOpen(true);
         }
       } catch (err) {
@@ -71,78 +77,54 @@ const Home = () => {
     fetchNotices();
   }, []);
 
-  // Function to close modal
   const closeNoticesModal = () => {
     setIsModalOpen(false);
   };
 
+  const handleHospitalDataReady = () => {
+    setHospitalDataReady(true);
+  };
+
   return (
     <div className="pt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-16">
-      {/* 기존 컴포넌트들 유지 */}
       <ScrollAnimation>
-        <MainBanner />
+        <Suspense fallback={<div>병원 상태 정보를 불러오는 중...</div>}>
+          <HospitalStatusCard onDataReady={handleHospitalDataReady} />
+        </Suspense>
       </ScrollAnimation>
 
-      <ScrollAnimation animation="fade-up" delay={200}>
-        <TreatmentArea />
-      </ScrollAnimation>
+      {hospitalDataReady && (
+        <>
+          <ScrollAnimation delay={250}>
+            <Suspense fallback={<div>배너를 불러오는 중...</div>}>
+              <MainBanner />
+            </Suspense>
+          </ScrollAnimation>
 
-      <ScrollAnimation animation="fade-up" delay={400}>
-        <MapSection />
-      </ScrollAnimation>
+          <ScrollAnimation animation="fade-up" delay={300}>
+            <Suspense fallback={<div>진료 정보를 불러오는 중...</div>}>
+              <TreatmentArea />
+            </Suspense>
+          </ScrollAnimation>
 
-      {/* 공지사항 모달 */}
-      <Dialog open={isModalOpen} onOpenChange={closeNoticesModal}>
-        <DialogContent className="max-w-2xl p-0 overflow-hidden">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <p>공지사항을 불러오는 중...</p>
-            </div>
-          ) : error ? (
-            <div className="flex justify-center items-center h-64">
-              <p className="text-red-500">{error}</p>
-            </div>
-          ) : selectedNotices.length > 0 ? (
-            <div className="relative">
-              <Carousel className="w-full">
-                <CarouselContent>
-                  {selectedNotices.map((notice) => (
-                    <CarouselItem
-                      key={notice.id}
-                      className="flex justify-center items-center"
-                    >
-                      <div className="p-8 text-center max-w-xl">
-                        <h3 className="text-2xl font-bold mb-4">
-                          {notice.title}
-                        </h3>
-                        <p className="text-gray-600 mb-6 text-lg whitespace-pre-wrap">
-                          {notice.content}
-                        </p>
-                        <div className="text-sm text-gray-500 space-y-2">
-                          <p>
-                            휴무일:{" "}
-                            {new Date(notice.appliedDate).toLocaleDateString()}
-                          </p>
-                          <p>
-                            게시일:{" "}
-                            {new Date(notice.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious className="left-4" />
-                <CarouselNext className="right-4" />
-              </Carousel>
-            </div>
-          ) : (
-            <div className="flex justify-center items-center h-64">
-              <p>공지사항이 없습니다.</p>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          <ScrollAnimation animation="fade-up" delay={400}>
+            <Suspense fallback={<div>지도 정보를 불러오는 중...</div>}>
+              <MapSection />
+            </Suspense>
+          </ScrollAnimation>
+        </>
+      )}
+
+      {/* 공지사항 모달 - 별도 컴포넌트로 분리 */}
+      <Suspense fallback={<div>공지사항을 불러오는 중...</div>}>
+        <NoticeModal
+          notices={selectedNotices}
+          isOpen={isModalOpen}
+          isLoading={isLoading}
+          error={error}
+          onClose={closeNoticesModal}
+        />
+      </Suspense>
     </div>
   );
 };
